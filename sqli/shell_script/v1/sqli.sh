@@ -8,7 +8,7 @@ fi
 
 TARGET=$1
 TARGET_NAME=$(echo "$TARGET" | sed 's|https\?://||' | cut -d '/' -f 1) # Extract hostname for folder name
-OUTPUT_DIR="/mnt/${TARGET_NAME}_output"
+OUTPUT_DIR="/mnt/sqli/${TARGET_NAME}_output"
 
 # Create a folder named after the target
 mkdir -p "$OUTPUT_DIR"
