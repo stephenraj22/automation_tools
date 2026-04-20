@@ -17,7 +17,7 @@ import threading
 import time
 
 class SecurityOrchestrator:
-    def __init__(self, domain, output_dir=None, scope_file=None, rate_limit=1, check_alive=False):
+    def __init__(self, domain, output_dir=None, scope_file=None, rate_limit=1, check_alive=False, proxy=None, discover_params=False):
         self.domain = domain
         self.base_dir = Path(__file__).parent
         # Use /mnt/{domain} as default output directory
@@ -30,10 +30,15 @@ class SecurityOrchestrator:
         self.scope = self.load_scope(scope_file) if scope_file else None
         # Alive check option
         self.check_alive = check_alive
+        # Proxy support
+        self.proxy = proxy
+        # Parameter discovery option
+        self.discover_params = discover_params
         # Tools in dependency order - recon must run first to generate input files
         self.tools = {
             'recon': self.run_js_analysis,  # Generates domains, urls, js, json, txt files
             'alive_check': self.run_alive_check,  # Filters dead endpoints (optional)
+            'parameter_discovery': self.run_parameter_discovery,  # Discovers parameters in URLs (optional)
             'directory_traversal': self.run_directory_traversal,  # Depends on domains file
             'insecure_configuration': self.run_insecure_configuration,  # Depends on js file
             'subdomain_takeover': self.run_subdomain_takeover,  # Depends on domains file
@@ -115,6 +120,38 @@ class SecurityOrchestrator:
                 return False
         except Exception as e:
             self.log(f"Alive check error: {e}")
+            return True
+    
+    def run_parameter_discovery(self):
+        """Run parameter discovery on URLs"""
+        self.log("Running Parameter Discovery on URLs...")
+        script_path = self.base_dir / "utils/parameter_discovery.py"
+        
+        urls_file = self.output_dir / f"urls_{self.domain}.txt"
+        params_file = self.output_dir / f"parameters_{self.domain}.txt"
+        
+        if not script_path.exists():
+            self.log("parameter_discovery.py not found, skipping parameter discovery")
+            return False
+        
+        if not urls_file.exists():
+            self.log(f"URLs file not found: {urls_file}")
+            return False
+        
+        try:
+            result = subprocess.run(
+                [sys.executable, str(script_path), str(urls_file), str(params_file)],
+                capture_output=True,
+                text=True
+            )
+            if result.returncode == 0:
+                self.log(f"Parameter discovery completed. Results saved to {params_file}")
+                return True
+            else:
+                self.log(f"Parameter discovery failed: {result.stderr}")
+                return False
+        except Exception as e:
+            self.log(f"Parameter discovery error: {e}")
             return False
     
     def run_js_analysis(self):
@@ -130,6 +167,11 @@ class SecurityOrchestrator:
         try:
             env = os.environ.copy()
             env['OUTPUT_DIR'] = str(self.output_dir)
+            if self.proxy:
+                env['HTTP_PROXY'] = self.proxy
+                env['HTTPS_PROXY'] = self.proxy
+                env['http_proxy'] = self.proxy
+                env['https_proxy'] = self.proxy
             result = subprocess.run(
                 ["bash", str(script_path), self.domain],
                 capture_output=True,
@@ -178,6 +220,11 @@ class SecurityOrchestrator:
         try:
             env = os.environ.copy()
             env['OUTPUT_DIR'] = str(self.output_dir)
+            if self.proxy:
+                env['HTTP_PROXY'] = self.proxy
+                env['HTTPS_PROXY'] = self.proxy
+                env['http_proxy'] = self.proxy
+                env['https_proxy'] = self.proxy
             result = subprocess.run(
                 [sys.executable, str(script_path), self.domain],
                 capture_output=True,
@@ -213,6 +260,11 @@ class SecurityOrchestrator:
         try:
             env = os.environ.copy()
             env['OUTPUT_DIR'] = str(self.output_dir)
+            if self.proxy:
+                env['HTTP_PROXY'] = self.proxy
+                env['HTTPS_PROXY'] = self.proxy
+                env['http_proxy'] = self.proxy
+                env['https_proxy'] = self.proxy
             result = subprocess.run(
                 [sys.executable, str(script_path), self.domain],
                 capture_output=True,
@@ -248,6 +300,11 @@ class SecurityOrchestrator:
         try:
             env = os.environ.copy()
             env['OUTPUT_DIR'] = str(self.output_dir)
+            if self.proxy:
+                env['HTTP_PROXY'] = self.proxy
+                env['HTTPS_PROXY'] = self.proxy
+                env['http_proxy'] = self.proxy
+                env['https_proxy'] = self.proxy
             result = subprocess.run(
                 [sys.executable, str(script_path), "-f", str(domains_file), "-d", self.domain],
                 capture_output=True,
@@ -321,6 +378,11 @@ class SecurityOrchestrator:
         try:
             env = os.environ.copy()
             env['OUTPUT_DIR'] = str(self.output_dir)
+            if self.proxy:
+                env['HTTP_PROXY'] = self.proxy
+                env['HTTPS_PROXY'] = self.proxy
+                env['http_proxy'] = self.proxy
+                env['https_proxy'] = self.proxy
             result = subprocess.run(
                 ["bash", str(script_path), self.domain],
                 capture_output=True,
@@ -447,6 +509,11 @@ class SecurityOrchestrator:
                 self.log("Skipping alive check (not enabled)")
                 continue
             
+            # Skip parameter_discovery if not enabled
+            if tool_name == 'parameter_discovery' and not self.discover_params:
+                self.log("Skipping parameter discovery (not enabled)")
+                continue
+            
             self.log(f"Running {tool_name}...")
             tool_func()
         
@@ -487,8 +554,10 @@ Examples:
     scope_file = sys.argv[3] if len(sys.argv) > 3 else None
     rate_limit = int(sys.argv[4]) if len(sys.argv) > 4 else 1
     check_alive = sys.argv[5].lower() == 'true' if len(sys.argv) > 5 else False
+    proxy = sys.argv[6] if len(sys.argv) > 6 else None
+    discover_params = sys.argv[7].lower() == 'true' if len(sys.argv) > 7 else False
     
-    orchestrator = SecurityOrchestrator(domain, output_dir, scope_file, rate_limit, check_alive)
+    orchestrator = SecurityOrchestrator(domain, output_dir, scope_file, rate_limit, check_alive, proxy, discover_params)
     orchestrator.run_all()
     report_file = orchestrator.generate_report()
     print(f"Report generated in {orchestrator.output_dir}")
