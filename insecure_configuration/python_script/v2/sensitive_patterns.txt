@@ -1,0 +1,10 @@
+(api_key|apikey|secret_key|secretkey|auth_token|token)\s*=\s*['"]?([a-zA-Z0-9/+]{16,})['"]?
+(password|passwd|pwd)\s*=\s*['"]?([a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':",.<>?]{8,})['"]?
+(AKIA)[A-Z0-9]{16}
+[a-zA-Z0-9/+]{40}
+ey[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}
+[a-zA-Z0-9/+]{20,}=*
+[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}
+(jdbc:mysql|mongodb|postgres|sqlserver)://[^'"\s]+
+(ssh-rsa|ssh-ed25519)\s+[A-Za-z0-9+/=]+\s+
+(secret|private)\s*:\s*['"]?([a-zA-Z0-9+/=]{16,})['"]?
