@@ -15,6 +15,8 @@ from datetime import datetime
 from pathlib import Path
 import threading
 import time
+sys.path.insert(0, str(Path(__file__).parent / "utils"))
+from vulnerability_analyzer import VulnerabilityAnalyzer
 
 class SecurityOrchestrator:
     def __init__(self, domain, output_dir=None, scope_file=None, rate_limit=1, check_alive=False, proxy=None, discover_params=False):
@@ -519,6 +521,20 @@ class SecurityOrchestrator:
         
         self.log("Assessment complete")
     
+    def run_vulnerability_analyzer(self):
+        """Run vulnerability analyzer to generate consolidated reports"""
+        self.log("Running vulnerability analyzer...")
+        try:
+            analyzer = VulnerabilityAnalyzer(self.domain)
+            analyzer.analyze_all()
+            html_report = analyzer.generate_html_report()
+            json_report = analyzer.generate_json_report()
+            self.log(f"Vulnerability analysis complete. HTML: {html_report}, JSON: {json_report}")
+            return {'html': str(html_report), 'json': str(json_report)}
+        except Exception as e:
+            self.log(f"Vulnerability analyzer error: {e}")
+            return None
+    
     def run_all(self):
         """Run all enabled tools"""
         self.log(f"Starting security assessment for {self.domain}")
@@ -530,6 +546,15 @@ class SecurityOrchestrator:
             except Exception as e:
                 self.log(f"Unexpected error running {tool_name}: {e}")
                 self.results[tool_name] = {'status': 'error', 'error': str(e)}
+        
+        # Run vulnerability analyzer after all tools complete
+        vuln_reports = self.run_vulnerability_analyzer()
+        if vuln_reports:
+            self.results['vulnerability_analyzer'] = {
+                'status': 'completed',
+                'html_report': vuln_reports['html'],
+                'json_report': vuln_reports['json']
+            }
         
         report_file = self.generate_report()
         self.log(f"Security assessment completed. Report: {report_file}")
